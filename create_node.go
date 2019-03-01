@@ -2,42 +2,28 @@ package main
 
 import (
 	"fmt"
+	"time"
 
+	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack/baremetal/noauth"
 	"github.com/gophercloud/gophercloud/openstack/baremetal/v1/nodes"
 	"github.com/gophercloud/gophercloud/openstack/baremetal/v1/ports"
 )
 
-/* totally untested.  Just a theory, feel free to delete.
-
-func wait_for_state(client *gophercloudServiceClient, timeout int, state string) (r err) {
-
-	i := 0
-	for i < timeout {
-		i += 1
-		// FIXME: I know we can do a search for the specific UUID.
-		nodes.ListDetail(client, nodes.ListOpts{}).EachPage(func(page pagination.Page) (bool, error) {
-			nodeList, err := nodes.ExtractNodes(page)
-			if err != nil {
-				return false, err
-			}
-
-			for _, n := range nodeList {
-				if n.UUID == UUID {
-					if n.ProvisionState == state {
-						return nil
-					}
-				}
-
-				fmt.Printf("%s %s %s %s - looking for %s\n", n.UUID, n.Name, n.PowerState, n.ProvisionState, state)
-			}
-
-			return true, nil
-		})
+func waitForState(client *gophercloud.ServiceClient, timeout int, uuid string, state string) error {
+	for i := 0; i < timeout; i++ {
+		node, err := nodes.Get(client, uuid).Extract()
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%s %d %s - %s\n", time.Now(), i, uuid, node.ProvisionState)
+		if node.UUID == uuid && node.ProvisionState == state {
+			return nil
+		}
+		time.Sleep(time.Second * 10)
 	}
+	return fmt.Errorf("%s never entered state %s", uuid, state)
 }
-
-*/
 
 func main() {
 	client, err := noauth.NewBareMetalNoAuth(noauth.EndpointOpts{
@@ -71,7 +57,7 @@ func main() {
 	// Example to Create a Port
 	createPort, err := ports.Create(client, ports.CreateOpts{
 		NodeUUID:        createNode.UUID,
-		Address:         "00:cd:18:18:77:ca",
+		Address:         "00:73:49:3a:76:8e",
 		PhysicalNetwork: "provisioning",
 	}).Extract()
 	if err != nil {
@@ -111,12 +97,16 @@ func main() {
 	validateResult := nodes.Validate(client, createNode.UUID)
 	fmt.Printf("validation returned: %v\n", validateResult)
 
-	fmt.Printf("\n** Setting node Manageable **\n\n", validateResult)
+	fmt.Printf("\n** Setting node Manageable **\n\n%v", validateResult)
 	changeResult := nodes.ChangeProvisionState(client, createNode.UUID,
 		nodes.ProvisionStateOpts{
 			Target: nodes.TargetManage,
 		})
 	fmt.Printf("ChangeProvisionState requested, result:%v\n", changeResult)
 
-	//wait_for_state(client, 60, node.Manageable)
+	err = waitForState(client, 60, createNode.UUID, nodes.Manageable)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Done!\n")
 }
