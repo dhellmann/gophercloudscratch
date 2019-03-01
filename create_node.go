@@ -85,8 +85,21 @@ func main() {
 	}
 	fmt.Printf("updated node with image source and checksum: %v\n", updateNode)
 
-	validateResult := nodes.Validate(client, createNode.UUID)
-	fmt.Printf("validation returned: %v\n", validateResult)
+	validateResult, err := nodes.Validate(client, createNode.UUID).Extract()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("validation results:\n")
+	fmt.Printf("\tboot: %v\n", validateResult.Boot)
+	fmt.Printf("\tconsole: %v\n", validateResult.Console)
+	fmt.Printf("\tdeploy: %v\n", validateResult.Deploy)
+	fmt.Printf("\tinspect: %v\n", validateResult.Inspect)
+	fmt.Printf("\tmanagement: %v\n", validateResult.Management)
+	fmt.Printf("\tnetwork: %v\n", validateResult.Network)
+	fmt.Printf("\tpower: %v\n", validateResult.Power)
+	fmt.Printf("\traid: %v\n", validateResult.RAID)
+	fmt.Printf("\trescue: %v\n", validateResult.Rescue)
+	fmt.Printf("\tstorage: %v\n", validateResult.Storage)
 
 	fmt.Printf("\n** Setting node Manageable **\n\n%v", validateResult)
 	changeResult := nodes.ChangeProvisionState(client, createNode.UUID,
