@@ -73,16 +73,6 @@ func main() {
 				Path:  "/instance_info/image_source",
 				Value: "http://172.22.0.1/images/redhat-coreos-maipo-latest.qcow2",
 			},
-		}).Extract()
-	if err != nil {
-		fmt.Printf("ERROR: %v\n", err)
-		panic(err)
-	}
-	fmt.Printf("updated node with image_source: %v\n", updateNode)
-
-	// Example to Update Node
-	updateNode, err = nodes.Update(client, createNode.UUID,
-		nodes.UpdateOpts{
 			nodes.UpdateOperation{
 				Op:    nodes.AddOp,
 				Path:  "/instance_info/image_checksum",
@@ -90,9 +80,10 @@ func main() {
 			},
 		}).Extract()
 	if err != nil {
+		fmt.Printf("ERROR: %v\n", err)
 		panic(err)
 	}
-	fmt.Printf("updated node with image_source: %v\n", updateNode)
+	fmt.Printf("updated node with image source and checksum: %v\n", updateNode)
 
 	validateResult := nodes.Validate(client, createNode.UUID)
 	fmt.Printf("validation returned: %v\n", validateResult)
